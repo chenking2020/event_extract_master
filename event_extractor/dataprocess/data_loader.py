@@ -6,8 +6,6 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 
 import json
 import numpy as np
-from tqdm import tqdm
-import ahocorasick
 import importlib
 import random
 import math

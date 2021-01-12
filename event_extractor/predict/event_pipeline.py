@@ -5,34 +5,23 @@ import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from event_extractor.dataprocess import data_loader
-from event_extractor.predict.sentence_spliter import split_function
-import mlflow
 import json
 import importlib
 import numpy as np
+import re
 
 
 class EventExtractor(object):
-    def __init__(self, lang, model_id):
+    def __init__(self, lang):
         self.lang = lang
-        self.model_id = model_id
         self.max_word_count = 500
 
-        self.lang_splitter = split_function(lang)
         self.processor_module = importlib.import_module('event_extractor.dataprocess.process_{}'.format(lang))
 
-        mlflow.set_tracking_uri(
-            "file://{}/runmodels".format(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))))
-        mlflow.set_experiment("event_task")
-
-        mlflow_instance = mlflow.get_run(model_id)
-        mlflow_info = mlflow_instance.info
-        BASE_DIR = mlflow_info.artifact_uri
-        BASE_DIR = BASE_DIR[BASE_DIR.index("/"):]
-        arg_path = os.path.join(BASE_DIR, "event_params.json")
-        map_path = os.path.join(BASE_DIR, "event_map.json")
-        model_path = os.path.join(BASE_DIR, "event.model")
+        BASE_DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+        arg_path = os.path.join(BASE_DIR, "checkpoint", "event_params.json")
+        map_path = os.path.join(BASE_DIR, "checkpoint", "event_map.json")
+        model_path = os.path.join(BASE_DIR, "checkpoint", "event.model")
 
         with open(arg_path, 'r') as f:
             jd = json.load(f)
@@ -52,7 +41,7 @@ class EventExtractor(object):
         self.event_model.eval()
 
     def get_event_result(self, input_json):
-        sentences = self.lang_splitter(input_json["text"])
+        sentences = re.split("。|？|！|；|;|,|.|\\?", input_json["text"])
         event_result = {"id": input_json["id"], "event_list": []}
 
         for sentence in sentences:
@@ -105,8 +94,8 @@ class EventExtractor(object):
 
 
 if __name__ == '__main__':
-    model = EventExtractor(lang="zh", model_id="b28bbe2c9b104eb8ab73a6bfd4e243be")
-    model = EventExtractor(lang="en", model_id="4f3f1f84ac554d8dace7877620ec6035")
+    model = EventExtractor(lang="zh")
+    model = EventExtractor(lang="en")
     # lang = input("input the language:")
     # text = input("input the text:")
     print(model.get_event_result(
